@@ -1,5 +1,7 @@
 package com.eucalyptus.tests.awssdk
 
+import java.text.SimpleDateFormat
+import java.text.DateFormat
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
@@ -89,40 +91,83 @@ class TestBillingUsage {
                     'Expected failure due to signature version' )
         }
 
+        final AWSCredentialsProvider userCred = new AWSStaticCredentialsProvider( new BasicAWSCredentials( "AKIAAAEUCQK6QYUSAHFL", "gZMTHFl5zqkIOV6d5MhzyrF756JNkVdS2hytHqMC" ) )
 
         try{
-            getYouBillClient( credentials ).with {
+            final DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
+            getYouBillClient( userCred ).with {
                 N4j.print('Calling viewUsage')
                 viewUsage(new ViewUsageRequest(
-                        services: 'Ec2',
+                        services: 'ec2',
                         usageTypes: 'all',
                         operations: 'all',
-                        reportGranularity: 'Hours')
+                        reportGranularity: 'hourly',
+                        timePeriodFrom: df.parse("11/15/2016"),
+                        timePeriodTo: df.parse("3/16/2017")
+                )
                 ).with {
-                    N4j.print("View usage data: ${it}")
-                    N4j.print("data: ${getData()}")
+                    N4j.print("Hourly usage data: ${it}")
                 }
+
+                viewUsage(new ViewUsageRequest(
+                        services: 'ec2',
+                        usageTypes: 'all',
+                        operations: 'all',
+                        reportGranularity: 'daily',
+                        timePeriodFrom: df.parse("11/15/2016"),
+                        timePeriodTo: df.parse("3/16/2017")
+                )
+                ).with {
+                    N4j.print("Daily usage data: ${it}")
+                }
+
+                viewUsage(new ViewUsageRequest(
+                        services: 'ec2',
+                        usageTypes: 'all',
+                        operations: 'all',
+                        reportGranularity: 'monthly',
+                        timePeriodFrom: df.parse("11/15/2016"),
+                        timePeriodTo: df.parse("3/16/2017")
+                )
+                ).with {
+                    N4j.print("Monthly usage data: ${it}")
+                }
+
 
                 N4j.print('Calling viewMonthlyUsage')
                 viewMonthlyUsage(new ViewMonthlyUsageRequest(
-                        year: '2016',
-                        month: '12'
+                        year: '2017',
+                        month: '3'
                 )).with {
                     N4j.print("View monthly usage data: ${it}")
-                    N4j.print("data: ${getData()}")
+                } 
+
+
+                viewMonthlyUsage(new ViewMonthlyUsageRequest(
+                        year: '2017',
+                        month: '2'
+                )).with {
+                    N4j.print("View monthly usage data: ${it}")
                 }
+ 
+                viewMonthlyUsage(new ViewMonthlyUsageRequest(
+                        year: '2017',
+                        month: '13'
+                )).with {
+                    N4j.print("View monthly usage data: ${it}")
+                } 
             }
-            
-            getYouEc2ReportsClient( credentials ).with {
+
+            final long MillisecondsInDay = 24*60*60*1000;
+            /*getYouEc2ReportsClient( credentials ).with {
                 N4j.print('Calling ec2reports::viewInstanceUsageReport')
                 viewInstanceUsageReport(new ViewInstanceUsageReportRequest(
                         granularity: 'Daily',
-                        timeRangeStart: (new Date(System.currentTimeMillis()-30*24*60*60*1000)),
+                        timeRangeStart: (new Date(System.currentTimeMillis() - 365 * MillisecondsInDay )),
                         timeRangeEnd: new Date(System.currentTimeMillis()),
                         groupBy: new InstanceUsageGroup(
-                                type: 'Tag',
-                                key: 'User'
-                        ),
+                                type: 'Availability Zone',
+                                key: null),
                         filters: new InstanceUsageFilters(
                                 member: Lists.newArrayList(
                                         new InstanceUsageFilter(
@@ -131,23 +176,22 @@ class TestBillingUsage {
                                         ),
                                         new InstanceUsageFilter(
                                                 type: 'Tag',
-                                                key: 'User',
-                                                value: 'EUCA'
+                                                key: 'Group',
+                                                value: 'QA'
                                         ),
                                         new InstanceUsageFilter(
                                                 type: 'Platforms',
                                                 key: 'Linux/Unix'
-                                        ),
+                                        ), 
                                         new InstanceUsageFilter(
                                                 type: 'Platforms',
                                                 key: 'Windows'
-                                        )
+                                        ) 
                                 )
                         )
                 ))
                 .with {
                     N4j.print("View instance usage report: ${it}")
-                    N4j.print("usage report: ${ getUsageReport()}")
                 }
                 N4j.print('Calling ec2reports::viewReservedInstanceUtilizationReport')
                 viewReservedInstanceUtilizationReport(new ViewReservedInstanceUtilizationReportRequest())
@@ -155,7 +199,7 @@ class TestBillingUsage {
                     N4j.print("View reserved instance utilization report: ${it}")
                     N4j.print("utialization report: ${ getUtilizationReport() }")
                 }
-            }
+            }*/
             N4j.print( "Test complete" )
         } finally {
             // Attempt to clean up anything we created
